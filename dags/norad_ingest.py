@@ -6,10 +6,9 @@ from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from database import SessionLocal
+
+from models import Satellite, Process
 
 import logging
 import requests
@@ -28,22 +27,6 @@ with DAG(
 
     os.environ["no_proxy"]="*" # Dumb workaround to avoid mac sigsegv
 
-    ''' Database Setup'''
-    load_dotenv()
-    host = os.getenv('DB_HOST')
-    user = os.getenv('DB_USER')
-    password = os.getenv('DB_PASSWORD')
-    port = os.getenv('DB_PORT')
-    database = os.getenv('DB_NAME')
-
-    logging.info(f'postgresql://{user}:{password}@{host}:{port}/{database}')
-    DATABASE_CONNECTION_URI = f'postgresql://{user}:{password}@{host}:{port}/{database}'
-    
-    # SQL Alchemy
-    engine = create_engine(DATABASE_CONNECTION_URI)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
     ''' Task Definitions '''
     def check_if_updated(ti):
         """Placeholder - Check if NORAD Satellite data has been updated"""
@@ -51,17 +34,56 @@ with DAG(
         # API call to pull data from NORAD Starlonk dataset
         satellites = {}
 
+        # Placeholder
         if False:
             return ['done']
 
         # Else
-        return ['pull_satellite_data_task']
+        return ['started_event_task']
 
     check_if_updated_task = BranchPythonOperator(
     task_id='check_if_updated_task',
     python_callable=check_if_updated
     )
 
+    def process_event(ti, **context):
+        """Upsert Process - modify status portion later"""
+        db = SessionLocal()
+
+        pid = context['dag_run'].run_id
+
+        print("pushing process to db")
+        process_data = {
+            "id" : pid
+        }
+        logging.info(f'pid: {pid}')
+        # Query processes on pid
+        exists = db.query(Process).filter(Process.id == pid)
+
+        # Update value if exists, else create
+        if exists.first():
+            process_obj = exists.one()
+            process_obj.status = 'completed'
+            db.commit()
+        else:
+            process = Process(**process_data)
+            process.status = 'started'
+            db.add(process)
+        
+        db.commit()
+        logging.info("pushed process to db")
+
+        db.close()
+
+    started_event_task = PythonOperator(
+        task_id='started_event_task',
+        python_callable=process_event
+    )
+
+    completed_event_task = PythonOperator(
+        task_id='completed_event_task',
+        python_callable=process_event
+    )
 
     def pull_satellite_data(ti):
         """Pull Starlink satellite data raw from NORAD"""
@@ -84,7 +106,7 @@ with DAG(
 
         ti.xcom_push(key='raw_satellite_data', value=raw_data)
 
-        return ['push_to_postgres_task']
+        return ['format_satellite_data']
 
 
     pull_satellite_data_task = PythonOperator(
@@ -119,8 +141,27 @@ with DAG(
         python_callable=format_satellite_data
     )
 
-    def push_to_postgres():
-        logging.info('pushing to pg')
+
+    def push_to_postgres(ti):
+        """ Push Satellite Data to Postgres """
+        db = SessionLocal()
+
+        satellite_data = ti.xcom_pull(task_ids=['format_satellite_data'], key='satellites')
+
+        satellites_to_add = []
+        for satellite_json in satellite_data:
+
+            updated = False
+            updated = db.query(Satellite).filter(Satellite.satellite_id == satellite_json['satellite_id']).update(satellite_json)
+            db.commit()
+
+            if not updated:
+                satellite = Satellite(**satellite_json)
+                satellites_to_add.append(satellite)
+
+        db.add_all(satellites_to_add)
+        db.commit()
+        db.close()
 
 
     push_to_postgres_task = PythonOperator(
@@ -133,5 +174,5 @@ with DAG(
     )
 
 
-    (check_if_updated_task >> pull_satellite_data_task >> format_satellite_data_task >> push_to_postgres_task >> done)
+    (check_if_updated_task >> started_event_task >> pull_satellite_data_task >> format_satellite_data_task >> push_to_postgres_task >> completed_event_task >> done)
     check_if_updated_task >> done
