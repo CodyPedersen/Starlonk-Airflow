@@ -118,10 +118,11 @@ with DAG(
     def format_satellite_data(ti):
         satellites = []
 
-        satellite_json = ti.xcom_pull(task_ids=['pull_satellite_data'], key='raw_satellite_data')
+        satellite_list = ti.xcom_pull(task_ids=['pull_satellite_data_task'], key='raw_satellite_data')[0]
+        logging.info(satellite_list)
 
         # Change satellite keys to a more readable format
-        for raw_satellite in satellite_json:
+        for raw_satellite in satellite_list:
 
             # Modify keys to Satellite model standards
             satellite = {
@@ -146,18 +147,32 @@ with DAG(
         """ Push Satellite Data to Postgres """
         db = SessionLocal()
 
-        satellite_data = ti.xcom_pull(task_ids=['format_satellite_data'], key='satellites')
+        satellite_data = ti.xcom_pull(task_ids=['format_satellite_data_task'], key='satellites')[0]
 
         satellites_to_add = []
+        updated_satellites = []
+
         for satellite_json in satellite_data:
 
             updated = False
-            updated = db.query(Satellite).filter(Satellite.satellite_id == satellite_json['satellite_id']).update(satellite_json)
+            satellite_query = db.query(Satellite).filter(Satellite.satellite_id == satellite_json['satellite_id'])
+            updated = satellite_query.update(satellite_json)
             db.commit()
 
             if not updated:
                 satellite = Satellite(**satellite_json)
                 satellites_to_add.append(satellite)
+
+            ''' Push updated satellites for logging if exists '''
+            sat_obj_exists = satellite_query.first()
+            if sat_obj_exists:
+                sat_dict = sat_obj_exists.to_dict()
+                updated_satellites.append(sat_dict)
+
+        # Log added/updated satellites
+        added_satellites_json = [sat.to_dict() for sat in satellites_to_add]
+        logging.info(f'added: {added_satellites_json}')
+        logging.info(f'updated: {updated_satellites}')
 
         db.add_all(satellites_to_add)
         db.commit()
