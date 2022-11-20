@@ -7,7 +7,6 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 
 from database import SessionLocal
-
 from models import Satellite, Process
 
 import logging
@@ -20,7 +19,7 @@ log = logging.getLogger(__name__)
 
 with DAG(
     dag_id='norad_ingest',
-    schedule='*/5 * * * *',
+    schedule='*/20 * * * *',
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
     catchup=False
 ) as dag:
@@ -30,20 +29,14 @@ with DAG(
     ''' Task Definitions '''
     def check_if_updated(ti):
         """Placeholder - Check if NORAD Satellite data has been updated"""
-
-        # API call to pull data from NORAD Starlonk dataset
-        satellites = {}
-
         # Placeholder
         if False:
             return ['done']
-
-        # Else
-        return ['started_event_task']
+        return ['started_event_task', 'pull_satellite_data_task']
 
     check_if_updated_task = BranchPythonOperator(
-    task_id='check_if_updated_task',
-    python_callable=check_if_updated
+        task_id='check_if_updated_task',
+        python_callable=check_if_updated
     )
 
     def process_event(ti, **context):
@@ -94,6 +87,10 @@ with DAG(
         try:
             logging.info("Pulling data from NORAD")
             satellite_response = requests.get(url=starlink)
+
+            if satellite_response.status_code != 200:
+                raise Exception("NORAD status code was not 200")
+
             logging.info(f"satellite_response: {satellite_response}")
         except Exception as e:
             logging.error(f"Unable to complete request: {repr(e)}")
@@ -118,7 +115,7 @@ with DAG(
     def format_satellite_data(ti):
         satellites = []
 
-        satellite_list = ti.xcom_pull(task_ids=['pull_satellite_data_task'], key='raw_satellite_data')[0]
+        satellite_list = ti.xcom_pull(task_ids='pull_satellite_data_task', key='raw_satellite_data')
         logging.info(satellite_list)
 
         # Change satellite keys to a more readable format
@@ -147,7 +144,7 @@ with DAG(
         """ Push Satellite Data to Postgres """
         db = SessionLocal()
 
-        satellite_data = ti.xcom_pull(task_ids=['format_satellite_data_task'], key='satellites')[0]
+        satellite_data = ti.xcom_pull(task_ids='format_satellite_data_task', key='satellites')
 
         satellites_to_add = []
         updated_satellites = []
@@ -178,6 +175,8 @@ with DAG(
         db.commit()
         db.close()
 
+        return ['completed_event_task', 'done']
+
 
     push_to_postgres_task = PythonOperator(
         task_id='push_to_postgres_task',
@@ -188,6 +187,18 @@ with DAG(
         task_id= 'done',
     )
 
+    ''' Full NORAD ingest execution path '''
+    (
+        check_if_updated_task >> 
+        pull_satellite_data_task >> 
+        format_satellite_data_task >> 
+        push_to_postgres_task >> 
+        done
+    )
 
-    (check_if_updated_task >> started_event_task >> pull_satellite_data_task >> format_satellite_data_task >> push_to_postgres_task >> completed_event_task >> done)
+    ''' Short-circuit execution path '''
     check_if_updated_task >> done
+
+    ''' Generate start event tasks '''
+    check_if_updated_task >> started_event_task
+    push_to_postgres_task >> completed_event_task
