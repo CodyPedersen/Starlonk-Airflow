@@ -26,6 +26,10 @@ import os
 
 log = logging.getLogger(__name__)
 
+# Batch Predict Globals
+TIME_INTERVAL_S = 60
+TOTAL_TIME_DELTA_M = 10
+
 ''' Utility functions '''
 
 def convert_day_percentage(epoch):
@@ -317,8 +321,6 @@ with DAG(
 
 
     def generate_predictions_push(ti):
-        TIME_INTERVAL_S = 60
-        TOTAL_TIME_DELTA_M = 10
         db = SessionLocal()
 
         tle_list = ti.xcom_pull(task_ids='generate_tles_task', key='satellite_tles')
@@ -418,7 +420,7 @@ with DAG(
         python_callable=delete_old_predictions
     )
 
-  
+
     done = EmptyOperator(
         task_id= 'done',
     )
