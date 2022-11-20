@@ -2,26 +2,21 @@
 Pull starlink satellite data from NORAD
 """
 from airflow import DAG
-from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import BranchPythonOperator, PythonOperator
+from airflow.operators.python import PythonOperator
 
 
-from skyfield.api import load, wgs84, EarthSatellite
+from skyfield.api import load, EarthSatellite
 from sgp4.conveniences import dump_satrec
 
 from models import Satellite, Prediction
-from database import SessionLocal, host, user, password, port, database
-from sqlalchemy import DateTime, cast
-from sqlalchemy.sql import functions
-import psycopg2
+from database import SessionLocal
 
 from dateutil import parser
 import numpy as np
 import datetime
 import logging
 import pendulum
-import os
 
 
 log = logging.getLogger(__name__)
@@ -391,29 +386,16 @@ with DAG(
 
     def delete_old_predictions(ti):
         """Delete all satellites earlier than prediction era - manually because sqlalchemy doesn't want to play nice"""
-        conn = psycopg2.connect(
-            database = database,
-            user = user,
-            password = password,
-            host = host,
-            port = port
-        )
-        cur = conn.cursor()
 
-        #db = SessionLocal()
+        db = SessionLocal()
         f_now = datetime.datetime.utcnow()
         now = datetime.datetime(f_now.year, f_now.month, f_now.day, f_now.hour, f_now.minute, f_now.second)
-        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
-        logging.info(f"DELETE FROM prediction WHERE epoch < '{timestamp}'")
+        logging.info(f"DELETE FROM prediction WHERE epoch < '{now}'")
 
-        cur.execute(f"DELETE FROM prediction WHERE epoch < '{timestamp}'")
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        #db.query(Prediction).filter(Prediction.epoch < timestamp).delete()
-        #db.close()
+        db.query(Prediction).filter(Prediction.epoch < now).delete()
+        db.commit()
+        db.close()
 
     delete_old_predictions_task = PythonOperator(
         task_id='delete_old_predictions_task',
