@@ -403,9 +403,12 @@ with DAG(
         now = datetime.datetime(f_now.year, f_now.month, f_now.day, f_now.hour, f_now.minute, f_now.second)
         timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
-        logging.info(f'Deleting predictions < {timestamp}')
+        logging.info(f"DELETE FROM prediction WHERE epoch < '{timestamp}'")
 
         cur.execute(f"DELETE FROM prediction WHERE epoch < '{timestamp}'")
+
+        cur.close()
+        conn.close()
 
         #db.query(Prediction).filter(Prediction.epoch < timestamp).delete()
         #db.close()
@@ -415,15 +418,7 @@ with DAG(
         python_callable=delete_old_predictions
     )
 
-    # def push_to_postgres(ti):
-    #     pass
- 
-    # push_to_postgres_task = PythonOperator(
-    #     task_id='push_to_postgres_task',
-    #     python_callable=push_to_postgres
-    # )
-
-    
+  
     done = EmptyOperator(
         task_id= 'done',
     )
