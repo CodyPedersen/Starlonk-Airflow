@@ -123,8 +123,11 @@ with DAG(
                     satellite_epoch.append(Prediction(**prediction))
 
                 # Bulk push all satellites for this epoch
-                db.bulk_save_objects(satellite_epoch)
-                db.commit()
+                try:
+                    db.bulk_save_objects(satellite_epoch)
+                    db.commit()
+                except Exception as e:
+                    logging.info(f"Failed to satellites for {prediction_epoch} - {repr(e)}")
 
                 prediction_epoch = prediction_epoch + interval
 
