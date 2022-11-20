@@ -41,32 +41,31 @@ with DAG(
 
     def process_event(ti, **context):
         """Upsert Process - modify status portion later"""
-        db = SessionLocal()
+        with SessionLocal() as db:
 
-        pid = context['dag_run'].run_id
+            pid = context['dag_run'].run_id
 
-        print("pushing process to db")
-        process_data = {
-            "id" : pid
-        }
-        logging.info(f'pid: {pid}')
-        # Query processes on pid
-        exists = db.query(Process).filter(Process.id == pid)
+            print("pushing process to db")
+            process_data = {
+                "id" : pid
+            }
+            logging.info(f'pid: {pid}')
+            # Query processes on pid
+            exists = db.query(Process).filter(Process.id == pid)
 
-        # Update value if exists, else create
-        if exists.first():
-            process_obj = exists.one()
-            process_obj.status = 'completed'
+            # Update value if exists, else create
+            if exists.first():
+                process_obj = exists.one()
+                process_obj.status = 'completed'
+                db.commit()
+            else:
+                process = Process(**process_data)
+                process.status = 'started'
+                db.add(process)
+            
             db.commit()
-        else:
-            process = Process(**process_data)
-            process.status = 'started'
-            db.add(process)
-        
-        db.commit()
-        logging.info("pushed process to db")
+            logging.info("pushed process to db")
 
-        db.close()
 
     started_event_task = PythonOperator(
         task_id='started_event_task',
@@ -142,38 +141,38 @@ with DAG(
 
     def push_to_postgres(ti):
         """ Push Satellite Data to Postgres """
-        db = SessionLocal()
+        with SessionLocal() as db:
 
-        satellite_data = ti.xcom_pull(task_ids='format_satellite_data_task', key='satellites')
+            satellite_data = ti.xcom_pull(task_ids='format_satellite_data_task', key='satellites')
 
-        satellites_to_add = []
-        updated_satellites = []
+            satellites_to_add = []
+            updated_satellites = []
 
-        for satellite_json in satellite_data:
+            for satellite_json in satellite_data:
 
-            updated = False
-            satellite_query = db.query(Satellite).filter(Satellite.satellite_id == satellite_json['satellite_id'])
-            updated = satellite_query.update(satellite_json)
+                updated = False
+                satellite_query = db.query(Satellite).filter(Satellite.satellite_id == satellite_json['satellite_id'])
+                updated = satellite_query.update(satellite_json)
+                db.commit()
+
+                if not updated:
+                    satellite = Satellite(**satellite_json)
+                    satellites_to_add.append(satellite)
+
+                ''' Push updated satellites for logging if exists '''
+                sat_obj_exists = satellite_query.first()
+                if sat_obj_exists:
+                    sat_dict = sat_obj_exists.to_dict()
+                    updated_satellites.append(sat_dict)
+
+            # Log added/updated satellites
+            added_satellites_json = [sat.to_dict() for sat in satellites_to_add]
+            logging.info(f'added: {added_satellites_json}')
+            logging.info(f'updated: {updated_satellites}')
+
+            db.add_all(satellites_to_add)
             db.commit()
-
-            if not updated:
-                satellite = Satellite(**satellite_json)
-                satellites_to_add.append(satellite)
-
-            ''' Push updated satellites for logging if exists '''
-            sat_obj_exists = satellite_query.first()
-            if sat_obj_exists:
-                sat_dict = sat_obj_exists.to_dict()
-                updated_satellites.append(sat_dict)
-
-        # Log added/updated satellites
-        added_satellites_json = [sat.to_dict() for sat in satellites_to_add]
-        logging.info(f'added: {added_satellites_json}')
-        logging.info(f'updated: {updated_satellites}')
-
-        db.add_all(satellites_to_add)
-        db.commit()
-        db.close()
+        
 
         return ['completed_event_task', 'done']
 
