@@ -408,7 +408,7 @@ with DAG(
         logging.info(f"DELETE FROM prediction WHERE epoch < '{timestamp}'")
 
         cur.execute(f"DELETE FROM prediction WHERE epoch < '{timestamp}'")
-
+        conn.commit()
         cur.close()
         conn.close()
 
