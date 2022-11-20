@@ -6,8 +6,8 @@ from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 
-from database import SessionLocal
-from models import Satellite, Process
+from utils.database import SessionLocal
+from utils.models import Satellite, Process
 
 import logging
 import requests

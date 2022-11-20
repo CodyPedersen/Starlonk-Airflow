@@ -1,15 +1,15 @@
 """
-Pull starlink satellite data from NORAD
+Bulk prediction of Starlink satellite locations from t=(now + n, now + 2n) by interval
 """
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 
 from skyfield.api import load, EarthSatellite
-from prediction_utils import *
+from utils.prediction import *
 
-from models import Satellite, Prediction
-from database import SessionLocal
+from utils.models import Satellite, Prediction
+from utils.database import SessionLocal
 
 import datetime
 import logging
@@ -81,7 +81,7 @@ with DAG(
         interval = datetime.timedelta(seconds=TIME_INTERVAL_S)
 
         while prediction_epoch <= end_time:
-            logging.info(prediction_epoch)
+            logging.info(f'Calculating prediction epoch {prediction_epoch}')
 
             # Iterate over all satellites for prediction epoch
             satellite_epoch = []
@@ -143,7 +143,9 @@ with DAG(
 
         logging.info(f"DELETE FROM prediction WHERE epoch < '{now}'")
 
-        db.query(Prediction).filter(Prediction.epoch < now).delete()
+        deletes = db.query(Prediction).filter(Prediction.epoch < now).delete()
+
+        logging.info(f"Deleted {deletes} records")
         db.commit()
         db.close()
 
