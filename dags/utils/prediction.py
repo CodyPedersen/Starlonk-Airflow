@@ -70,7 +70,10 @@ def convert_to_tle(
     mean_motion,
     rev_at_epoch
 ):
-    """Converts from Starlonk satellite data format (modified NORAD) to TLE format"""
+    """
+    Converts from Starlonk satellite data format (modified NORAD) to TLE format. 
+    The code in its current state should never go into production :|
+    """
 
     # Launch data from object id
     l_yr = satellite_id[2:4]

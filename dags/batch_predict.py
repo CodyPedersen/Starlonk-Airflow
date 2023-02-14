@@ -127,7 +127,7 @@ with DAG(
                     db.bulk_save_objects(satellite_epoch)
                     db.commit()
                 except Exception as e:
-                    logging.info(f"Failed to satellites for {prediction_epoch} - {repr(e)}")
+                    logging.info(f"Failed to satellites for {prediction_epoch} prediction epoch - {repr(e)}")
 
                 prediction_epoch = prediction_epoch + interval
 
@@ -138,7 +138,7 @@ with DAG(
     )
 
     def delete_old_predictions(ti):
-        """Delete all satellites earlier than prediction era - manually because sqlalchemy doesn't want to play nice"""
+        """Delete all satellites earlier than prediction era"""
 
         with SessionLocal() as db:
             f_now = datetime.datetime.utcnow()
