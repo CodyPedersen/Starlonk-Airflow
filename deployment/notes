@@ -1,0 +1,4 @@
+- Had to manually specify persistent volumes since baremetal clusters can't dynamically provision
+- Had to run `sudo chown -R 1001:1001 /<mount folder>` for bitnami pg
+- Not deleting all volumes leads to problems on rerun, will need to fix this
+- coredns not resolving services (in non-default namespace)
