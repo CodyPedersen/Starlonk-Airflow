@@ -4,3 +4,10 @@
 - coredns not resolving services (in non-default namespace)
     - Reverted to default namespace as a temporary fix until I can dig into why it's referencing airflow-postgres.default instead of airflow-postgres.airflow
 - Had to chmod rwx and allow all user/group access to mount directory
+
+
+To do:
+    - Set up postgres db connection details (kube secret) and access them in the databases.py code
+    - build a custom image with the python libraries referenced, push that to the CR
+    - redeploy airflow kube
+    

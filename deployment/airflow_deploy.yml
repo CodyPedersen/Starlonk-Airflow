@@ -764,7 +764,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -787,6 +787,16 @@ spec:
             # Dynamically created secret envs
             # Extra env          
             # Hard Coded Airflow Envs
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
                 secretKeyRef:
@@ -824,6 +834,16 @@ spec:
           securityContext: 
             runAsUser: 65533
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD
             - name: GIT_SYNC_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -862,7 +882,7 @@ spec:
       containers:
         # Always run the main scheduler container.
         - name: scheduler
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -875,6 +895,16 @@ spec:
             # Dynamically created secret envs
             # Extra env          
             # Hard Coded Airflow Envs
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD            
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
                 secretKeyRef:
@@ -946,6 +976,16 @@ spec:
           securityContext: 
             runAsUser: 65533
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD
             - name: GIT_SYNC_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -982,7 +1022,7 @@ spec:
         - name: scheduler-log-groomer
           resources:
             {}
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1142,7 +1182,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -1167,7 +1207,16 @@ spec:
             # Dynamically created environment variables
             # Dynamically created secret envs
             # Extra env
-          
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
@@ -1207,6 +1256,16 @@ spec:
           securityContext: 
             runAsUser: 65533
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD
             - name: GIT_SYNC_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -1244,7 +1303,7 @@ spec:
             mountPath: /git
       containers:
         - name: triggerer
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1272,7 +1331,16 @@ spec:
           
             []
           env:
-          
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Dynamically created environment variables
             # Dynamically created secret envs
             # Extra env
@@ -1328,6 +1396,16 @@ spec:
           securityContext: 
             runAsUser: 65533
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             - name: GIT_SYNC_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -1441,7 +1519,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -1462,7 +1540,17 @@ spec:
           env:          
             # Dynamically created environment variables
             # Dynamically created secret envs
-            # Extra env          
+            # Extra env
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
@@ -1497,7 +1585,7 @@ spec:
                   key: connection
       containers:
         - name: webserver
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1544,7 +1632,17 @@ spec:
           env:          
             # Dynamically created environment variables
             # Dynamically created secret envs
-            # Extra env          
+            # Extra env
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
@@ -1872,7 +1970,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -1893,7 +1991,17 @@ spec:
           env:          
             # Dynamically created environment variables
             # Dynamically created secret envs
-            # Extra env          
+            # Extra env
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
@@ -1933,6 +2041,16 @@ spec:
           securityContext: 
             runAsUser: 65533
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD
             - name: GIT_SYNC_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -1970,7 +2088,7 @@ spec:
             mountPath: /git
       containers:
         - name: worker
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -2016,7 +2134,17 @@ spec:
               value: "0"          
             # Dynamically created environment variables
             # Dynamically created secret envs
-            # Extra env          
+            # Extra env
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
@@ -2055,6 +2183,16 @@ spec:
           securityContext: 
             runAsUser: 65533
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD
             - name: GIT_SYNC_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -2089,7 +2227,7 @@ spec:
           - name: dags
             mountPath: /git
         - name: worker-log-groomer
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -3113,7 +3251,7 @@ spec:
       serviceAccountName: airflow-create-user-job
       containers:
         - name: create-user
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -3140,7 +3278,16 @@ spec:
             # Dynamically created environment variables
             # Dynamically created secret envs
             # Extra env
-                    
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD     
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
@@ -3229,7 +3376,7 @@ spec:
       serviceAccountName: airflow-migrate-database-job
       containers:
         - name: run-airflow-migrations
-          image: apache/airflow:2.5.1
+          image: gitprotean/airflow-kube:v1.0
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -3245,7 +3392,17 @@ spec:
             # Extra env
           
             - name: PYTHONUNBUFFERED
-              value: "1"          
+              value: "1"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-creds
+                  key: DB_PASSWORD          
             # Hard Coded Airflow Envs
             - name: AIRFLOW__CORE__FERNET_KEY
               valueFrom:
