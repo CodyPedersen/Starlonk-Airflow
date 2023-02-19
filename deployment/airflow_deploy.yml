@@ -209,7 +209,7 @@ metadata:
     heritage: Helm
 type: Opaque
 data:
-  webserver-secret-key: "UkRsdFZuSjVPWFF4Ums5S1ZIcFRVbnAwYUhBd2EzaDBhMkZyT0dVeVVtYz0="
+  webserver-secret-key: "TlRKQ1dsaG5UbTFZVjFkRVlUbG1Samh6UTFaSmJHSlNjSFJDWkdWUFEwaz0="
 ---
 ################################
 ## Airflow ConfigMap
@@ -236,7 +236,7 @@ data:
     
     [core]
     colored_console_log = False
-    dags_folder = /opt/airflow/dags
+    dags_folder = /opt/airflow/dags/repo//dags
     executor = CeleryExecutor
     load_examples = False
     remote_logging = False
@@ -734,7 +734,7 @@ spec:
         checksum/metadata-secret: ae9b3f69ed343fffaa86b4ca5326b5d4f16c6f6f7b51a09a87dfce51dc81a4fa
         checksum/result-backend-secret: 74e3e99feee51248d44224665d60fab543dd6b25ba95f04e6fcb0e5758342056
         checksum/pgbouncer-config-secret: da52bd1edfe820f0ddfacdebb20a4cc6407d296ee45bcb500a6407e2261a5ba2
-        checksum/airflow-config: a8bb60fe43fbbe92f8afad7edf050ed4536d388f2312a14b643590d14fe18ce8
+        checksum/airflow-config: 861e5e71c8d3ef78ac9c208947c43aa45a3cdbb15423cf742e4861e97531a119
         checksum/extra-configmaps: 2e44e493035e2f6a255d08f8104087ff10d30aef6f63176f1b18f75f73295598
         checksum/extra-secrets: bb91ef06ddc31c0c5a29973832163d8b0b597812a793ef911d33b622bc9d1655
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
@@ -818,6 +818,47 @@ spec:
                 secretKeyRef:
                   name: airflow-broker-url
                   key: connection
+        - name: git-sync-init
+          image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+          imagePullPolicy: IfNotPresent
+          securityContext: 
+            runAsUser: 65533
+          env:
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_PASSWORD
+            - name: GIT_SYNC_REV
+              value: "HEAD"
+            - name: GIT_SYNC_BRANCH
+              value: "main"
+            - name: GIT_SYNC_REPO
+              value: "https://github.com/CodyPedersen/Starlonk-Airflow.git"
+            - name: GIT_SYNC_DEPTH
+              value: "1"
+            - name: GIT_SYNC_ROOT
+              value: "/git"
+            - name: GIT_SYNC_DEST
+              value: "repo"
+            - name: GIT_SYNC_ADD_USER
+              value: "true"
+            - name: GIT_SYNC_WAIT
+              value: "5"
+            - name: GIT_SYNC_MAX_SYNC_FAILURES
+              value: "0"
+            - name: GIT_SYNC_ONE_TIME
+              value: "true"
+          resources: 
+              {}
+          volumeMounts:
+          - name: dags
+            mountPath: /git
       containers:
         # Always run the main scheduler container.
         - name: scheduler
@@ -895,6 +936,49 @@ spec:
               mountPath: "/opt/airflow/config/airflow_local_settings.py"
               subPath: airflow_local_settings.py
               readOnly: true
+            - name: dags
+              mountPath: /opt/airflow/dags
+              
+              readOnly: True        
+        - name: git-sync
+          image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+          imagePullPolicy: IfNotPresent
+          securityContext: 
+            runAsUser: 65533
+          env:
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_PASSWORD
+            - name: GIT_SYNC_REV
+              value: "HEAD"
+            - name: GIT_SYNC_BRANCH
+              value: "main"
+            - name: GIT_SYNC_REPO
+              value: "https://github.com/CodyPedersen/Starlonk-Airflow.git"
+            - name: GIT_SYNC_DEPTH
+              value: "1"
+            - name: GIT_SYNC_ROOT
+              value: "/git"
+            - name: GIT_SYNC_DEST
+              value: "repo"
+            - name: GIT_SYNC_ADD_USER
+              value: "true"
+            - name: GIT_SYNC_WAIT
+              value: "5"
+            - name: GIT_SYNC_MAX_SYNC_FAILURES
+              value: "0"
+          resources: 
+              {}
+          volumeMounts:
+          - name: dags
+            mountPath: /git
         - name: scheduler-log-groomer
           resources:
             {}
@@ -914,6 +998,8 @@ spec:
         - name: config
           configMap:
             name: airflow-airflow-config
+        - name: dags
+          emptyDir: {}
         - name: logs
           emptyDir: {}
 ---
@@ -1026,7 +1112,7 @@ spec:
       annotations:
         checksum/metadata-secret: ae9b3f69ed343fffaa86b4ca5326b5d4f16c6f6f7b51a09a87dfce51dc81a4fa
         checksum/pgbouncer-config-secret: da52bd1edfe820f0ddfacdebb20a4cc6407d296ee45bcb500a6407e2261a5ba2
-        checksum/airflow-config: a8bb60fe43fbbe92f8afad7edf050ed4536d388f2312a14b643590d14fe18ce8
+        checksum/airflow-config: 861e5e71c8d3ef78ac9c208947c43aa45a3cdbb15423cf742e4861e97531a119
         checksum/extra-configmaps: 2e44e493035e2f6a255d08f8104087ff10d30aef6f63176f1b18f75f73295598
         checksum/extra-secrets: bb91ef06ddc31c0c5a29973832163d8b0b597812a793ef911d33b622bc9d1655
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
@@ -1114,6 +1200,48 @@ spec:
                 secretKeyRef:
                   name: airflow-broker-url
                   key: connection
+        
+        - name: git-sync-init
+          image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+          imagePullPolicy: IfNotPresent
+          securityContext: 
+            runAsUser: 65533
+          env:
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_PASSWORD
+            - name: GIT_SYNC_REV
+              value: "HEAD"
+            - name: GIT_SYNC_BRANCH
+              value: "main"
+            - name: GIT_SYNC_REPO
+              value: "https://github.com/CodyPedersen/Starlonk-Airflow.git"
+            - name: GIT_SYNC_DEPTH
+              value: "1"
+            - name: GIT_SYNC_ROOT
+              value: "/git"
+            - name: GIT_SYNC_DEST
+              value: "repo"
+            - name: GIT_SYNC_ADD_USER
+              value: "true"
+            - name: GIT_SYNC_WAIT
+              value: "5"
+            - name: GIT_SYNC_MAX_SYNC_FAILURES
+              value: "0"
+            - name: GIT_SYNC_ONE_TIME
+              value: "true"
+          resources: 
+              {}
+          volumeMounts:
+          - name: dags
+            mountPath: /git
       containers:
         - name: triggerer
           image: apache/airflow:2.5.1
@@ -1136,6 +1264,10 @@ spec:
               mountPath: "/opt/airflow/config/airflow_local_settings.py"
               subPath: airflow_local_settings.py
               readOnly: true
+            - name: dags
+              mountPath: /opt/airflow/dags
+              
+              readOnly: True
           envFrom:
           
             []
@@ -1190,10 +1322,51 @@ spec:
                     - |
                       CONNECTION_CHECK_MAX_COUNT=0 AIRFLOW__LOGGING__LOGGING_LEVEL=ERROR exec /entrypoint \
                       airflow jobs check --job-type TriggererJob --local
+        - name: git-sync
+          image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+          imagePullPolicy: IfNotPresent
+          securityContext: 
+            runAsUser: 65533
+          env:
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_PASSWORD
+            - name: GIT_SYNC_REV
+              value: "HEAD"
+            - name: GIT_SYNC_BRANCH
+              value: "main"
+            - name: GIT_SYNC_REPO
+              value: "https://github.com/CodyPedersen/Starlonk-Airflow.git"
+            - name: GIT_SYNC_DEPTH
+              value: "1"
+            - name: GIT_SYNC_ROOT
+              value: "/git"
+            - name: GIT_SYNC_DEST
+              value: "repo"
+            - name: GIT_SYNC_ADD_USER
+              value: "true"
+            - name: GIT_SYNC_WAIT
+              value: "5"
+            - name: GIT_SYNC_MAX_SYNC_FAILURES
+              value: "0"
+          resources: 
+              {}
+          volumeMounts:
+          - name: dags
+            mountPath: /git
       volumes:
         - name: config
           configMap:
             name: airflow-airflow-config
+        - name: dags
+          emptyDir: {}
         - name: logs
           emptyDir: {}
 ---
@@ -1238,8 +1411,8 @@ spec:
       annotations:
         checksum/metadata-secret: ae9b3f69ed343fffaa86b4ca5326b5d4f16c6f6f7b51a09a87dfce51dc81a4fa
         checksum/pgbouncer-config-secret: da52bd1edfe820f0ddfacdebb20a4cc6407d296ee45bcb500a6407e2261a5ba2
-        checksum/webserver-secret-key: 9d35717927bb5b9947709f9f4f247e5088bc8ad79d571e8082bd75111538bc9d
-        checksum/airflow-config: a8bb60fe43fbbe92f8afad7edf050ed4536d388f2312a14b643590d14fe18ce8
+        checksum/webserver-secret-key: 63fd6832966aaa73ed0c9b6c576c0ab2029c167815faeb221c17ae99254a84a5
+        checksum/airflow-config: 861e5e71c8d3ef78ac9c208947c43aa45a3cdbb15423cf742e4861e97531a119
         checksum/webserver-config: 4a2281a4e3ed0cc5e89f07aba3c1bb314ea51c17cb5d2b41e9b045054a6b5c72
         checksum/extra-configmaps: 2e44e493035e2f6a255d08f8104087ff10d30aef6f63176f1b18f75f73295598
         checksum/extra-secrets: bb91ef06ddc31c0c5a29973832163d8b0b597812a793ef911d33b622bc9d1655
@@ -1667,9 +1840,9 @@ spec:
         checksum/metadata-secret: ae9b3f69ed343fffaa86b4ca5326b5d4f16c6f6f7b51a09a87dfce51dc81a4fa
         checksum/result-backend-secret: 74e3e99feee51248d44224665d60fab543dd6b25ba95f04e6fcb0e5758342056
         checksum/pgbouncer-config-secret: da52bd1edfe820f0ddfacdebb20a4cc6407d296ee45bcb500a6407e2261a5ba2
-        checksum/webserver-secret-key: d2b810689640adb246df1e76e0efce44b9b6928247d4a2b3d2d57d0f6dd71265
+        checksum/webserver-secret-key: 2eb106c6f82d3f941a5680b5aa1f9e198dc2794e0927ac78a095a2ca896e9f24
         checksum/kerberos-keytab: 18b80c0921e5c0af1e63eca1c3ce3fbc388d006bd2db5a7ab512dc8a563b6443
-        checksum/airflow-config: a8bb60fe43fbbe92f8afad7edf050ed4536d388f2312a14b643590d14fe18ce8
+        checksum/airflow-config: 861e5e71c8d3ef78ac9c208947c43aa45a3cdbb15423cf742e4861e97531a119
         checksum/extra-configmaps: 2e44e493035e2f6a255d08f8104087ff10d30aef6f63176f1b18f75f73295598
         checksum/extra-secrets: bb91ef06ddc31c0c5a29973832163d8b0b597812a793ef911d33b622bc9d1655
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
@@ -1753,6 +1926,48 @@ spec:
                 secretKeyRef:
                   name: airflow-broker-url
                   key: connection
+        
+        - name: git-sync-init
+          image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+          imagePullPolicy: IfNotPresent
+          securityContext: 
+            runAsUser: 65533
+          env:
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_PASSWORD
+            - name: GIT_SYNC_REV
+              value: "HEAD"
+            - name: GIT_SYNC_BRANCH
+              value: "main"
+            - name: GIT_SYNC_REPO
+              value: "https://github.com/CodyPedersen/Starlonk-Airflow.git"
+            - name: GIT_SYNC_DEPTH
+              value: "1"
+            - name: GIT_SYNC_ROOT
+              value: "/git"
+            - name: GIT_SYNC_DEST
+              value: "repo"
+            - name: GIT_SYNC_ADD_USER
+              value: "true"
+            - name: GIT_SYNC_WAIT
+              value: "5"
+            - name: GIT_SYNC_MAX_SYNC_FAILURES
+              value: "0"
+            - name: GIT_SYNC_ONE_TIME
+              value: "true"
+          resources: 
+              {}
+          volumeMounts:
+          - name: dags
+            mountPath: /git
       containers:
         - name: worker
           image: apache/airflow:2.5.1
@@ -1789,6 +2004,10 @@ spec:
               mountPath: "/opt/airflow/config/airflow_local_settings.py"
               subPath: airflow_local_settings.py
               readOnly: true
+            - name: dags
+              mountPath: /opt/airflow/dags
+              
+              readOnly: True
           envFrom:          
             []
           env:
@@ -1829,7 +2048,46 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: airflow-broker-url
-                  key: connection          
+                  key: connection                  
+        - name: git-sync
+          image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+          imagePullPolicy: IfNotPresent
+          securityContext: 
+            runAsUser: 65533
+          env:
+            - name: GIT_SYNC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_USERNAME
+            - name: GIT_SYNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "git-credentials"
+                  key: GIT_SYNC_PASSWORD
+            - name: GIT_SYNC_REV
+              value: "HEAD"
+            - name: GIT_SYNC_BRANCH
+              value: "main"
+            - name: GIT_SYNC_REPO
+              value: "https://github.com/CodyPedersen/Starlonk-Airflow.git"
+            - name: GIT_SYNC_DEPTH
+              value: "1"
+            - name: GIT_SYNC_ROOT
+              value: "/git"
+            - name: GIT_SYNC_DEST
+              value: "repo"
+            - name: GIT_SYNC_ADD_USER
+              value: "true"
+            - name: GIT_SYNC_WAIT
+              value: "5"
+            - name: GIT_SYNC_MAX_SYNC_FAILURES
+              value: "0"
+          resources: 
+              {}
+          volumeMounts:
+          - name: dags
+            mountPath: /git
         - name: worker-log-groomer
           image: apache/airflow:2.5.1
           imagePullPolicy: IfNotPresent
@@ -1849,6 +2107,8 @@ spec:
         - name: config
           configMap:
             name: airflow-airflow-config
+        - name: dags
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: logs
@@ -2767,7 +3027,7 @@ metadata:
     "helm.sh/hook-weight": "0"
 type: Opaque
 data:
-  fernet-key: "TVd0eFYyWkJWbHAyWm5OcGRYcG9kbU00TW5Gd1RXbDNObHBKUms1VVRGUT0="
+  fernet-key: "Y1V4bE1FNW5iemRFWjBsVGVVMDNVVnBYV21ab1owVXdPVUZzYlhGVk5Xbz0="
 ---
 ################################
 ## Airflow Redis Password Secret
@@ -2789,7 +3049,7 @@ metadata:
     "helm.sh/hook-weight": "0"
 type: Opaque
 data:
-  password: "QU44YUpwdnpQOA=="
+  password: "Z2VjTGV1ZmxzUg=="
 ---
 # Source: airflow/templates/secrets/redis-secrets.yaml
 ##################################
@@ -2811,7 +3071,7 @@ metadata:
     "helm.sh/hook-weight": "0"
 type: Opaque
 data:
-  connection: "cmVkaXM6Ly86QU44YUpwdnpQOEBhaXJmbG93LXJlZGlzOjYzNzkvMA=="
+  connection: "cmVkaXM6Ly86Z2VjTGV1ZmxzUkBhaXJmbG93LXJlZGlzOjYzNzkvMA=="
 ---
 ################################
 ## Airflow Create User Job
