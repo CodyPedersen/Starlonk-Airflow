@@ -8,7 +8,7 @@ import os
 # Database Setup
 host = "postgres-db"
 database = "postgres"
-port = 5432
+port = "5432"
 
 user = os.getenv('DB_USER')
 password = os.getenv('DB_PASSWORD')
