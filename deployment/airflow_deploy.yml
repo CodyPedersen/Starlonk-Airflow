@@ -1630,7 +1630,7 @@ spec:
         name: redis-db
       spec:
         accessModes: ["ReadWriteOnce"]
-        volumeName: redis-db-vol
+        volumeName: redis-vol
         storageClassName: default
         resources:
           requests:
