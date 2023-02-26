@@ -1,13 +1,17 @@
-- Had to manually specify persistent volumes since baremetal clusters can't dynamically provision
-- Had to run `sudo chown -R 1001:1001 /<mount folder>` for bitnami pg
-- Not deleting all volumes leads to problems on rerun, will need to fix this
-- coredns not resolving services (in non-default namespace)
-    - Reverted to default namespace as a temporary fix until I can dig into why it's referencing airflow-postgres.default instead of airflow-postgres.airflow
-- Had to chmod rwx and allow all user/group access to mount directory
+# Had to manually specify persistent volumes since baremetal clusters can't dynamically provision
+# Had to run `sudo chown -R 1001:1001 /<mount folder>` for bitnami pg
+# Not deleting all volumes leads to problems on rerun, will need to fix this
+# coredns not resolving services (in non-default namespace)
+#   - Reverted to default namespace as a temporary fix until I can dig into why it's referencing 
+# airflow-postgres.default instead of airflow-postgres.airflow
+# - Had to chmod rwx and allow all user/group access to mount directory
 
 
-To do:
-    - Set up postgres db connection details (kube secret) and access them in the databases.py code
-    - build a custom image with the python libraries referenced, push that to the CR
-    - redeploy airflow kube
+# Current workarounds/methods. Instead of just publicly exposing all the databases for my convenience,
+#   for webserver, just ssh tunnel and set up a localhost proxy on firefox
+#       ssh -D 1110 -p 42069 enso@shivaserv
+#   for airflow postgres, redis, ... set up a pipe to the desired port
+#       ncat -k -l 6379 < redis_pipe | ncat 10.109.148.238 6379 > redis_pipe &
+#       redis-cli -h 192.168.254.14 -p 6379 -a <secret>
+
     

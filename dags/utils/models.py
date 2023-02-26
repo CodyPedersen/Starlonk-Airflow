@@ -1,7 +1,6 @@
+from utils.database import Base
 from sqlalchemy import Column, Integer, String, Float, DateTime, ARRAY
 from sqlalchemy.sql import func
-
-from utils.database import Base
 
 
 class Satellite(Base):
