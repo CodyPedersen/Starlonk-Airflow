@@ -74,10 +74,10 @@ with DAG(
 
             '''
                 Initialize time-series data 
-                Calculates range (now + n + 1, now + 2n) with by interval of x (default x=60s)
+                Calculates range ("now" + n + 1, now + 2n) with by interval of x (default x=60s)
             '''
-            now = datetime.datetime.utcnow()
-            start_time = prediction_epoch = round_time(now, roundTo=TIME_INTERVAL_S) + datetime.timedelta(minutes=TOTAL_TIME_DELTA_M + 1)
+            now = round_time(None, 600) # Round to most recent 10 minute mark
+            start_time = prediction_epoch = now + datetime.timedelta(minutes=TOTAL_TIME_DELTA_M)
             end_time = start_time + datetime.timedelta(minutes=TOTAL_TIME_DELTA_M - 1)
             interval = datetime.timedelta(seconds=TIME_INTERVAL_S)
 
