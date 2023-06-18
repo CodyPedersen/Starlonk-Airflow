@@ -1,6 +1,12 @@
 """
 Pull starlink satellite data from NORAD
 """
+import os
+import json
+import logging
+
+import pendulum
+import requests
 from airflow import DAG
 from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
@@ -9,13 +15,8 @@ from airflow.operators.python import BranchPythonOperator, PythonOperator
 from utils.database import SessionLocal
 from utils.models import Satellite, Process
 
-import logging
-import requests
-import pendulum
-import json
-import os
-
 log = logging.getLogger(__name__)
+
 
 with DAG(
     dag_id='norad_ingest',
@@ -26,12 +27,10 @@ with DAG(
 
     os.environ["no_proxy"]="*" # Dumb workaround to avoid mac sigsegv
 
-    ''' Task Definitions '''
     def check_if_updated(ti):
         """Placeholder - Check if NORAD Satellite data has been updated"""
-        # Placeholder
-        if False:
-            return ['done']
+        # if False:
+        #     return ['done']
         return ['started_event_task', 'pull_satellite_data_task']
 
     check_if_updated_task = BranchPythonOperator(
@@ -62,10 +61,9 @@ with DAG(
                 process = Process(**process_data)
                 process.status = 'started'
                 db.add(process)
-            
+         
             db.commit()
             logging.info("pushed process to db")
-
 
     started_event_task = PythonOperator(
         task_id='started_event_task',
@@ -77,6 +75,7 @@ with DAG(
         python_callable=process_event
     )
 
+
     def pull_satellite_data(ti):
         """Pull Starlink satellite data raw from NORAD"""
 
@@ -85,7 +84,7 @@ with DAG(
         
         try:
             logging.info("Pulling data from NORAD")
-            satellite_response = requests.get(url=starlink)
+            satellite_response = requests.get(url=starlink, timeout=None)
 
             if satellite_response.status_code != 200:
                 raise Exception("NORAD status code was not 200")
@@ -104,7 +103,6 @@ with DAG(
 
         return ['format_satellite_data']
 
-
     pull_satellite_data_task = PythonOperator(
         task_id='pull_satellite_data_task',
         python_callable=pull_satellite_data
@@ -112,6 +110,7 @@ with DAG(
 
 
     def format_satellite_data(ti):
+        """Reformat satellite data fields w/ friendlier keys"""
         satellites = []
 
         satellite_list = ti.xcom_pull(task_ids='pull_satellite_data_task', key='raw_satellite_data')
@@ -132,7 +131,6 @@ with DAG(
 
         ti.xcom_push(key='satellites', value=satellites)
 
-    
     format_satellite_data_task = PythonOperator(
         task_id='format_satellite_data_task',
         python_callable=format_satellite_data
@@ -151,7 +149,9 @@ with DAG(
             for satellite_json in satellite_data:
 
                 updated = False
-                satellite_query = db.query(Satellite).filter(Satellite.satellite_id == satellite_json['satellite_id'])
+                satellite_query = db.query(Satellite).filter(
+                    Satellite.satellite_id == satellite_json['satellite_id']
+                )
                 updated = satellite_query.update(satellite_json)
                 db.commit()
 
@@ -159,7 +159,7 @@ with DAG(
                     satellite = Satellite(**satellite_json)
                     satellites_to_add.append(satellite)
 
-                ''' Push updated satellites for logging if exists '''
+                # Push updated satellites for logging if exists
                 sat_obj_exists = satellite_query.first()
                 if sat_obj_exists:
                     sat_dict = sat_obj_exists.to_dict()
@@ -173,9 +173,7 @@ with DAG(
             db.add_all(satellites_to_add)
             db.commit()
         
-
         return ['completed_event_task', 'done']
-
 
     push_to_postgres_task = PythonOperator(
         task_id='push_to_postgres_task',
