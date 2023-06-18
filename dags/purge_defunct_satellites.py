@@ -1,20 +1,16 @@
 """
 Purge all Satellites with epoch < some value
 """
+import logging
+import datetime
+
+import pendulum
 from airflow import DAG
-from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import BranchPythonOperator, PythonOperator
+from airflow.operators.python import PythonOperator
 
 from utils.database import SessionLocal
-from utils.models import Satellite, Process
-
-import datetime
-import logging
-import requests
-import pendulum
-import json
-import os
+from utils.models import Satellite
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +25,7 @@ with DAG(
 ) as dag:
 
     def purge_satellites(ti):
+        """Purge all satellites from prior to cutoff"""
         with SessionLocal() as db:
             utc_cutoff = (
                 datetime.datetime.utcnow() - datetime.timedelta(days=DELETE_DELTA_D)
@@ -51,11 +48,8 @@ with DAG(
         python_callable=purge_satellites
     )
 
-
     done = EmptyOperator(
         task_id= 'done',
     )
 
-    # Delete execution path
-    purge_satellites_task >> done
-    
+    purge_satellites_task >> done # Delete execution path
