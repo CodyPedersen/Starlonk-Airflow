@@ -143,36 +143,17 @@ with DAG(
 
             satellite_data = ti.xcom_pull(task_ids='format_satellite_data_task', key='satellites')
 
-            satellites_to_add = []
-            updated_satellites = []
-
-            for satellite_json in satellite_data:
-
-                updated = False
-                satellite_query = db.query(Satellite).filter(
-                    Satellite.satellite_id == satellite_json['satellite_id']
-                )
-                updated = satellite_query.update(satellite_json)
-                db.commit()
-
-                if not updated:
-                    satellite = Satellite(**satellite_json)
-                    satellites_to_add.append(satellite)
-
-                # Push updated satellites for logging if exists
-                sat_obj_exists = satellite_query.first()
-                if sat_obj_exists:
-                    sat_dict = sat_obj_exists.to_dict()
-                    updated_satellites.append(sat_dict)
+            satellite_merge_list = [
+                Satellite(**satellite_json)
+                for satellite_json in satellite_data
+            ]
+            for satellite in satellite_merge_list:
+                db.merge(satellite)
 
             # Log added/updated satellites
-            added_satellites_json = [sat.to_dict() for sat in satellites_to_add]
-            logging.info(f'added: {added_satellites_json}')
-            logging.info(f'updated: {updated_satellites}')
-
-            db.add_all(satellites_to_add)
+            logging.info(f'Upsert of {satellite_data}')
             db.commit()
-        
+
         return ['completed_event_task', 'done']
 
     push_to_postgres_task = PythonOperator(
