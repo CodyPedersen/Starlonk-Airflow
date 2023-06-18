@@ -3,20 +3,19 @@ Bulk prediction of Starlink satellite locations from t=(now + n, now + 2n) by in
     - To do:
         - Pre-generate time series and check if data has been calculated for that time series. If so, 'done'
 """
+import datetime
+import logging
+import pendulum
+
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 
 from skyfield.api import load, EarthSatellite
-from utils.prediction import *
+from utils.prediction import unpack_to_tle, round_time, deNaN
 
 from utils.models import Satellite, Prediction
 from utils.database import SessionLocal
-
-import datetime
-import logging
-import pendulum
-
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +30,9 @@ with DAG(
     catchup=False
 ) as dag:
 
-    ''' Task Definitions '''
+    # Task definitions
     def pull_satellites(ti):
+        """Grab satellites from the DB"""
         with SessionLocal() as db:
 
             # Pull satellites
@@ -41,7 +41,6 @@ with DAG(
 
             ti.xcom_push(key='satellites', value=satellite_dicts)
 
-
     pull_satellites_task = PythonOperator(
         task_id='pull_satellites_task',
         python_callable=pull_satellites
@@ -49,8 +48,8 @@ with DAG(
 
 
     def generate_tles(ti):
+        """Generate TLE from satellite data"""
         satellites = ti.xcom_pull(task_ids='pull_satellites_task', key='satellites')
-        #logging.info(satellites)
         satellite_tles = []
 
         logging.info("Generating TLEs")
@@ -67,15 +66,13 @@ with DAG(
 
 
     def generate_predictions_push(ti):
+        """Calculate/push satellite predictions for ("now" + n + 1, now + 2n), interval=60s"""
         with SessionLocal() as db:
 
             tle_list = ti.xcom_pull(task_ids='generate_tles_task', key='satellite_tles')
             logging.info(tle_list)
 
-            '''
-                Initialize time-series data 
-                Calculates range ("now" + n + 1, now + 2n) with by interval of x (default x=60s)
-            '''
+            # Initialize time-series data
             now = round_time(None, 600) # Round to most recent 10 minute mark
             start_time = prediction_epoch = now + datetime.timedelta(minutes=TOTAL_TIME_DELTA_M)
             end_time = start_time + datetime.timedelta(minutes=TOTAL_TIME_DELTA_M - 1)
@@ -87,7 +84,7 @@ with DAG(
                 # Iterate over all satellites for prediction epoch
                 satellite_epoch = []
                 for tle in tle_list:
-                    name, id, s,t = tle
+                    name, sat_id, s,t = tle
 
                     ts = load.timescale()
                     sky_sat =  EarthSatellite(s, t, name, ts)
@@ -100,8 +97,8 @@ with DAG(
                         int(prediction_epoch.minute),
                         int(prediction_epoch.second)
                     )
-            
-                    ''' Calculate coords & data points '''
+
+                    # Calculate coords & data points
                     geocentric_coords = sky_sat.at(t)
                     lat = geocentric_coords.subpoint().latitude
                     lon = geocentric_coords.subpoint().longitude
@@ -111,11 +108,14 @@ with DAG(
 
                     prediction = {
                         "satellite_name" : name,
-                        "satellite_id" : id,
+                        "satellite_id" : sat_id,
                         "epoch" : prediction_epoch,
                         "elevation" : deNaN(elevation_km),
                         "geocentric_coords" : [deNaN(coord) for coord in geo_pos_km],
-                        "geo_velocity_m_per_s": [deNaN(component) for component in velocity_m_per_s],
+                        "geo_velocity_m_per_s": [
+                            deNaN(component) 
+                            for component in velocity_m_per_s
+                        ],
                         "latitude" : deNaN(lat.degrees),
                         "longitude": deNaN(lon.degrees) 
                     }
@@ -130,7 +130,6 @@ with DAG(
                     logging.info(f"Failed to satellites for {prediction_epoch} prediction epoch - {repr(e)}")
 
                 prediction_epoch = prediction_epoch + interval
-
 
     generate_predictions_task = PythonOperator(
         task_id='generate_predictions_task',
@@ -151,7 +150,6 @@ with DAG(
             logging.info(f"Deleted {deletes} records")
             db.commit()
 
-
     delete_old_predictions_task = PythonOperator(
         task_id='delete_old_predictions_task',
         python_callable=delete_old_predictions
@@ -168,4 +166,3 @@ with DAG(
         delete_old_predictions_task >>
         done
     )
-
