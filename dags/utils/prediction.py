@@ -29,11 +29,11 @@ def convert_bstar(bstar):
         if (b_str[i] == '.'):
             decimal_i = i
         # Found sig figure
-        elif(decimal_i != None):
+        elif(decimal_i is not None):
             # If first sig fig, record location
-            if (sig_i == None and char != '0'):
+            if (sig_i is None and char != '0'):
                 sig_i = i
-            if (char != '0' or (char=='0' and sig_i != None)):
+            if (char != '0' or (char=='0' and sig_i is not None)):
                 sig_figs.append(char)
         i+=1
 
