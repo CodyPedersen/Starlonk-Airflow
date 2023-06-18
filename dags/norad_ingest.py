@@ -143,12 +143,14 @@ with DAG(
 
             satellite_data = ti.xcom_pull(task_ids='format_satellite_data_task', key='satellites')
 
+            # Delete to avoid time cost
+            db.query(Satellite).delete()
+
             satellite_merge_list = [
                 Satellite(**satellite_json)
                 for satellite_json in satellite_data
             ]
-            for satellite in satellite_merge_list:
-                db.merge(satellite)
+            db.add_all(satellite_merge_list)
 
             # Log added/updated satellites
             logging.info(f'Upsert of {satellite_data}')
