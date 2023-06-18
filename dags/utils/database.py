@@ -1,20 +1,20 @@
+"""Basic database/session functionality"""
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-import os
-
 
 # Database Setup
-host = "postgres-db"
-database = "postgres"
-port = "5432"
+HOST = "postgres-db"
+DATABASE = "postgres"
+PORT = "5432"
 
-user = os.getenv('DB_USER')
-password = os.getenv('DB_PASSWORD')
+USER = os.getenv('DB_USER')
+PASSWORD = os.getenv('DB_PASSWORD')
 
-
-DATABASE_CONNECTION_URI = f'postgresql://{user}:{password}@{host}:{port}/{database}'
+DATABASE_CONNECTION_URI = f'postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}'
 print(DATABASE_CONNECTION_URI)
 
 # SQL Alchemy
