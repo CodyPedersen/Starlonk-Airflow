@@ -2,13 +2,11 @@
 Pull starlink satellite data from NORAD
 """
 import os
-import json
 import logging
 
 import pendulum
 import requests
 from airflow import DAG
-from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 
