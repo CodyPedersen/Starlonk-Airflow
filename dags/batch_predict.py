@@ -5,15 +5,14 @@ Bulk prediction of Starlink satellite locations from t=(now + n, now + 2n) by in
 """
 import datetime
 import logging
-import pendulum
 
+import pendulum
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-
 from skyfield.api import load, EarthSatellite
-from utils.prediction import convert_to_tle, round_time, deNaN
 
+from utils.prediction import convert_to_tle, round_time, deNaN
 from utils.models import Satellite, Prediction
 from utils.database import SessionLocal
 
