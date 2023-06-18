@@ -12,7 +12,7 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 
 from skyfield.api import load, EarthSatellite
-from utils.prediction import unpack_to_tle, round_time, deNaN
+from utils.prediction import convert_to_tle, round_time, deNaN
 
 from utils.models import Satellite, Prediction
 from utils.database import SessionLocal
@@ -54,7 +54,7 @@ with DAG(
 
         logging.info("Generating TLEs")
         for satellite in satellites:
-            s, t = unpack_to_tle(**satellite)
+            s, t = convert_to_tle(**satellite)
             satellite_tles.append((satellite['satellite_name'], satellite['satellite_id'], s, t))
 
         ti.xcom_push(key='satellite_tles', value=satellite_tles)

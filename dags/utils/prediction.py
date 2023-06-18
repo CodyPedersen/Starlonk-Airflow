@@ -1,8 +1,9 @@
-from dateutil import parser
+"""Utilities to aid satellite location prediction"""
 import datetime
+from dateutil import parser
+
 import numpy as np
 
-''' Prediction Utility functions '''
 
 def convert_day_percentage(epoch):
     """Convert a datetime object to decimal TLE format"""
@@ -45,35 +46,34 @@ def convert_bstar(bstar):
 def compute_checksum(tle_line):
     """Compute checksum per TLE spec"""
 
-    sum = 0
+    c_sum = 0
     for char in tle_line:
         if char.isdigit():
-            sum += int(char)
+            c_sum += int(char)
         elif char == '-':
-            sum +=1
+            c_sum +=1
 
-    return sum % 10
+    return c_sum % 10
 
-def convert_to_tle(
-    norad_cat_id, 
-    classification_type,
-    satellite_id,
-    epoch_str,
-    mean_motion_dot, 
-    bstar,
-    element_set_no,
-    inclination,
-    ra_of_asc_node,
-    eccentricity,
-    arg_of_pericenter,
-    mean_anomaly,
-    mean_motion,
-    rev_at_epoch
-):
+def convert_to_tle(**kwargs):
     """
     Converts from Starlonk satellite data format (modified NORAD) to TLE format. 
     The code in its current state should never go into production :|
     """
+    norad_cat_id = kwargs['norad_cat_id']
+    classification_type = kwargs['classification_type']
+    satellite_id = kwargs['satellite_id']
+    epoch_str = kwargs['epoch']
+    mean_motion_dot = kwargs['mean_motion_dot']
+    bstar = kwargs['bstar']
+    element_set_no = kwargs['element_set_no']
+    inclination = kwargs['inclination']
+    ra_of_asc_node = kwargs['ra_of_asc_node']
+    eccentricity = kwargs['eccentricity']
+    arg_of_pericenter = kwargs['arg_of_pericenter']
+    mean_anomaly = kwargs['mean_anomaly']
+    mean_motion = kwargs['mean_motion']
+    rev_at_epoch = kwargs['rev_at_epoch']
 
     # Launch data from object id
     l_yr = satellite_id[2:4]
@@ -88,7 +88,6 @@ def convert_to_tle(
     # Constants
     mean_motion_ddot = "00000+0"
     ephemeris_type = '0'
-
 
     ''' Compute first string per TLE format '''
 
@@ -117,7 +116,6 @@ def convert_to_tle(
     
     #Calculate mean motion dot details and following spaces
     mean_motion_dot_data = f'{epoch}{mean_motion_dot}'
-    #print("mean_motion_dot_data len", len(mean_motion_dot_data))
     mean_motion_dot_space = ''.join([' ' for i in range(45 - len(mean_motion_dot_data))])
     mean_motion_dot_all = f'{mean_motion_dot_data}{mean_motion_dot_space}'
 
@@ -134,9 +132,8 @@ def convert_to_tle(
     ephemeris = f'{bstar_all}'
     s_unchecked = f'{ephemeris}{element_set_no}'
     checksum = compute_checksum(s_unchecked)
-    
-    s = f'{s_unchecked}{checksum}'
 
+    s = f'{s_unchecked}{checksum}'
 
     ''' Compute second string per TLE format '''
 
@@ -147,7 +144,6 @@ def convert_to_tle(
     inclination_formatted = format(inclination, '.4f')
     inclination_data = f'{catalog}{inclination_formatted}'
     inclination_spaces = ''.join([' ' for i in range(17 - len(inclination_data))])
-    #print(f'inclination_data len: {len(inclination_data)}')
     inclination_all = f'{inclination_data}{inclination_spaces}'
 
     # Format ra_of_asc_node (add starting space if < 100)
@@ -160,14 +156,12 @@ def convert_to_tle(
 
     ra_data = f'{inclination_all}{ra}'
     ra_spaces = ''.join([' ' for i in range(26 - len(ra_data))])
-    #print(f'ra_data len: {len(ra_data)}')
     ra_all = f'{ra_data}{ra_spaces}'
 
     # Format eccentricity
     eccentricity_formatted = format(eccentricity, '.7f').replace('0.','')
     eccentricity_data = f'{ra_all}{eccentricity_formatted}'
     eccentricity_spaces = ''.join([' ' for i in range(34 - len(eccentricity_data))])
-    #print(f'eccentricity len {len(eccentricity_data)}')
     eccentricity_all = f'{eccentricity_data}{eccentricity_spaces}'
 
     # Format arg_of_pericenter
@@ -179,7 +173,6 @@ def convert_to_tle(
         arg_of_pericenter = format(arg_of_pericenter, '.4f')
 
     arg_of_pericenter_data = f'{eccentricity_all}{arg_of_pericenter}'
-    #print(f'aop len {len(arg_of_pericenter_data)}')
     arg_of_pericenter_spaces = ''.join([' ' for i in range(43 - len(arg_of_pericenter_data))])
     arg_of_pericenter_all = f'{arg_of_pericenter_data}{arg_of_pericenter_spaces}'
 
@@ -192,14 +185,12 @@ def convert_to_tle(
         mean_anomaly = format(mean_anomaly, '.4f')
 
     mean_anomaly_data = f'{arg_of_pericenter_all}{mean_anomaly}'
-    #print(f'mean_anomaly_data len {len(mean_anomaly_data)}')
     mean_anomaly_spaces = ''.join([' ' for i in range(52 - len(mean_anomaly_data))])
     mean_anomaly_all = f'{mean_anomaly_data}{mean_anomaly_spaces}'
 
     #format mean_motion (10 < mean_motion < 100)
     mean_motion = format(mean_motion, '.8f')
     mean_motion_data = f'{mean_anomaly_all}{mean_motion}'
-    #print(f'mean_motion_data len {len(mean_motion_data)}')
     mean_motion_spaces = ''.join([' ' for i in range(63 - len(mean_motion_data))])
     mean_motion_all = f'{mean_motion_data}{mean_motion_spaces}'
 
@@ -221,33 +212,14 @@ def convert_to_tle(
     return s, t
 
 
-def unpack_to_tle(**kwargs):
-    """Unpacks satellite data for use in convert_to_tle"""
-
-    s, t = convert_to_tle(
-        norad_cat_id = kwargs['norad_cat_id'],
-        classification_type = kwargs['classification_type'],
-        satellite_id = kwargs['satellite_id'],
-        epoch_str = kwargs['epoch'],
-        mean_motion_dot = kwargs['mean_motion_dot'], 
-        bstar = kwargs['bstar'],
-        element_set_no = kwargs['element_set_no'],
-        inclination = kwargs['inclination'],
-        ra_of_asc_node = kwargs['ra_of_asc_node'],
-        eccentricity = kwargs['eccentricity'],
-        arg_of_pericenter = kwargs['arg_of_pericenter'],
-        mean_anomaly = kwargs['mean_anomaly'],
-        mean_motion = kwargs['mean_motion'],
-        rev_at_epoch = kwargs['rev_at_epoch']
-    )
-    return s, t
-
-
 def round_time(dt=None, roundTo=60):
-   if dt == None : dt = datetime.datetime.utcnow()
-   seconds = (dt.replace(tzinfo=None) - dt.min).seconds
-   rounding = (seconds+roundTo/2) // roundTo * roundTo
-   return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
+    """Round time to 'roundTo' seconds"""
+    if dt is None:
+        dt = datetime.datetime.utcnow()
+    seconds = (dt.replace(tzinfo=None) - dt.min).seconds
+    rounding = (seconds+roundTo/2) // roundTo * roundTo
+    return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
 
 def deNaN(loc):
+    """Swap NaNs with Nones"""
     return None if np.isnan(loc) else loc
