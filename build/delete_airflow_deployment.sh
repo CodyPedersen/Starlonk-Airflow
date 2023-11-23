@@ -20,5 +20,5 @@ kubectl delete pv redis-vol
 kubectl delete job airflow-create-user
 kubectl delete job airflow-run-airflow-migrations
 
-kubectl delete -f ./airflow_deploy.yml
+kubectl delete -f ./deployment/airflow_deploy.yml
 

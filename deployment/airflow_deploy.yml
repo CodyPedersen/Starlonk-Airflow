@@ -764,7 +764,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -882,7 +882,7 @@ spec:
       containers:
         # Always run the main scheduler container.
         - name: scheduler
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1022,7 +1022,7 @@ spec:
         - name: scheduler-log-groomer
           resources:
             {}
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1182,7 +1182,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -1303,7 +1303,7 @@ spec:
             mountPath: /git
       containers:
         - name: triggerer
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1519,7 +1519,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -1585,7 +1585,7 @@ spec:
                   key: connection
       containers:
         - name: webserver
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -1742,7 +1742,7 @@ spec:
           image: docker.io/bitnami/postgresql:11
           imagePullPolicy: "IfNotPresent"
           securityContext:
-            runAsUser: 1001
+            runAsUser: 0
           env:
             - name: BITNAMI_DEBUG
               value: "false"
@@ -1970,7 +1970,7 @@ spec:
         - name: wait-for-airflow-migrations
           resources:
             {}
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -2088,7 +2088,7 @@ spec:
             mountPath: /git
       containers:
         - name: worker
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -2227,7 +2227,7 @@ spec:
           - name: dags
             mountPath: /git
         - name: worker-log-groomer
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -3251,7 +3251,7 @@ spec:
       serviceAccountName: airflow-create-user-job
       containers:
         - name: create-user
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
@@ -3376,7 +3376,7 @@ spec:
       serviceAccountName: airflow-migrate-database-job
       containers:
         - name: run-airflow-migrations
-          image: gitprotean/airflow-kube:v1.0
+          image: codypedersen/starlonk_airflow:v1
           imagePullPolicy: IfNotPresent
           args: 
             - bash
