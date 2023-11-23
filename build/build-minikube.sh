@@ -2,10 +2,15 @@
 
 ## Run from root airflow directory ##
 
+minikube start --memory='6g' --cpus='4'
+#minikube mount /Users/enso/.mnt/airflow-worker-vol:/mnt/pv/airflow-worker-vol &
 
-# mount string for docker driver (M1)
-# Must chmod the bitnami directory sudo chown -R 1001:1001 /<mount folder>
-minikube start --mount-string='/Users/enso/.bitnami/postgresql/data:/bitnami/postgresql/data' --memory='6g' --cpus='4'
+# Apply requisite secrets
 kubectl apply -f ./deployment/secrets/gitsync.yml
 kubectl apply -f ./deployment/secrets/postgres-creds.yml
+
+# Deploy airflow
 kubectl apply -f ./deployment/airflow_deploy.yml
+
+# Post-build instructions
+    # run `minikube service airflow-webserver`

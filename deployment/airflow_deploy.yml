@@ -62,7 +62,7 @@ metadata:
     chart: "airflow-1.8.0"
     heritage: Helm
 ---
-#############################################
+##############################################
 ## Airflow Migrate Database Job ServiceAccount
 ##############################################
 kind: ServiceAccount
@@ -1967,6 +1967,14 @@ spec:
         runAsUser: 50000
         fsGroup: 0
       initContainers:
+        - name: volume-logs
+          securityContext:
+            runAsUser: 0
+          image: busybox
+          command: ["sh", "-c", "chown -R 50000:50000 /opt/airflow/logs/"]
+          volumeMounts:
+            - mountPath: /opt/airflow/logs/
+              name: logs
         - name: wait-for-airflow-migrations
           resources:
             {}
@@ -2034,7 +2042,6 @@ spec:
                 secretKeyRef:
                   name: airflow-broker-url
                   key: connection
-        
         - name: git-sync-init
           image: k8s.gcr.io/git-sync/git-sync:v3.6.3
           imagePullPolicy: IfNotPresent
@@ -2232,7 +2239,6 @@ spec:
           args: 
             - bash
             - /clean-logs
-          
           env:
             - name: AIRFLOW__LOG_RETENTION_DAYS
               value: "15"
