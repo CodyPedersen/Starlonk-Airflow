@@ -1,12 +1,12 @@
 env:
 	zsh -c "pip3 install ./requirements.txt"
     
-build_image_m1:
+build_push:
 	zsh -c " \
 	export DOCKER_DEFAULT_PLATFORM=linux/amd64; \
 	docker build . -t codypedersen/starlonk_airflow:$(tag); \
-	unset DOCKER_DEFAULT_PLATFORM \
-	echo $(tag)"
+	unset DOCKER_DEFAULT_PLATFORM; \
+	docker push codypedersen/starlonk_airflow:$(tag)"
 
 push:
 	zsh -c "docker push codypedersen/starlonk_airflow:$(tag)"
