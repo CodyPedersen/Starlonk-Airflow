@@ -18,6 +18,7 @@
 
 
 # Minikube (M1 - Apple Silicon)
+    # `export DOCKER_DEFAULT_PLATFORM=linux/amd64` before building airflow image
     # Change manifest for bitnami to run as root.
     # Create an init container *busybox* to modify docker volume chown
     # To do: update kube secrets/cm to point to my a different db address

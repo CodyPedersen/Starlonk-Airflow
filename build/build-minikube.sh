@@ -22,6 +22,9 @@ kubectl apply -f ./deployment/secrets/postgres-creds.yml
 # Deploy airflow monolith file
 kubectl apply -f ./deployment/airflow_deploy.yml
 
+# Deploy supplementary resources
+kubectl apply -f ./deployment/db/postgres_db.yml
+
 ######################
 ### Post-Build In. ###
 ######################
