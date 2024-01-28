@@ -1,3 +1,4 @@
+# pylint: disable=pointless-statement, pointless-string-statement
 """
 Bulk prediction of Starlink satellite locations from t=(now + n, now + 2n) by interval
     - To do:

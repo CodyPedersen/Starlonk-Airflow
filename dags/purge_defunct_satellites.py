@@ -1,3 +1,4 @@
+# pylint: disable=pointless-statement, pointless-string-statement
 """
 Purge all Satellites with epoch < some value
 """

@@ -1,3 +1,4 @@
+# pylint: disable=pointless-statement, pointless-string-statement
 """
 Pull starlink satellite data from NORAD
 """
@@ -167,10 +168,10 @@ with DAG(
 
     ''' Full NORAD ingest execution path '''
     (
-        check_if_updated_task >> 
-        pull_satellite_data_task >> 
-        format_satellite_data_task >> 
-        push_to_postgres_task >> 
+        check_if_updated_task >>
+        pull_satellite_data_task >>
+        format_satellite_data_task >>
+        push_to_postgres_task >>
         done
     )
 
